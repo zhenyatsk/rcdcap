@@ -10,6 +10,7 @@ SET(LIBRCDCAP_INC
     ${CMAKE_SOURCE_DIR}/include/rcdcap/sink.hh
     ${CMAKE_SOURCE_DIR}/include/rcdcap/erspan-processor.hh
     ${CMAKE_SOURCE_DIR}/include/rcdcap/hp-erm-processor.hh
+    ${CMAKE_SOURCE_DIR}/include/rcdcap/gre-processor.hh
     ${CMAKE_SOURCE_DIR}/include/rcdcap/decapsulating-processor.hh
     ${CMAKE_SOURCE_DIR}/include/rcdcap/byte-order.hh
     ${CMAKE_SOURCE_DIR}/include/rcdcap/byte-order.ii
@@ -28,6 +29,7 @@ SET(LIBRCDCAP_SRC
     source.cc
     sink.cc
     erspan-processor.cc
+    gre-processor.cc
     hp-erm-processor.cc
     decapsulating-processor.cc
     packet-headers.cc

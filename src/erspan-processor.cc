@@ -16,6 +16,7 @@
  */
 
 #include "rcdcap/erspan-processor.hh"
+#include "rcdcap/gre-processor.hh"
 #include "rcdcap/packet-headers.hh"
 
 #include <boost/scope_exit.hpp>
@@ -42,7 +43,7 @@ void ERSPANProcessor::process(PacketInfo* packet_info, size_t packets)
     {
         this->processImpl(current_packet);
     }
-	if(m_Sink)
+    if(m_Sink)
     	m_Sink->notify(packet_info, packets);
 }
 

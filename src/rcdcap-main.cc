@@ -24,6 +24,7 @@
 #include "rcdcap/byte-swap.hh"
 #include "rcdcap/hp-erm-processor.hh"
 #include "rcdcap/erspan-processor.hh"
+#include "rcdcap/gre-processor.hh"
 
 #ifdef HAS_PF_RING
 #   include "rcdcap/pfring-source.hh"
@@ -142,6 +143,7 @@ RCDCapApplication::RCDCapApplication()
 #endif
         ("hp-erm", popt::value<uint16>(), "Enable the HP ERM decapsulating processor")
         ("erspan", "Enable the ERSPAN decapsulating processor")
+        ("vmware", "Enable the Transparent Ethernet Bridging processor")
         ("ignore-incomplete,y", "Ignore incomplete packets")
         ("force-incomplete,f", "Ignore incomplete packets")
         ("daemonize,d", "Launch RCDCap as separate ")
@@ -325,8 +327,8 @@ void RCDCapApplication::run(int argc, char* argv[])
         if(!vm.count("dummy"))
         {
             m_Source->attach(hperm_proc);
-            if(vm.count("erspan"))
-                THROW_EXCEPTION("CISCO ERSPAN decapsulation is not supported in this mode");
+            if(vm.count("erspan") || vm.count("vmware"))
+                THROW_EXCEPTION("ERSPAN and/or VMware decapsulations are not supported in this mode");
             SourcePtr _last = hperm_proc;
             for(auto i = m_Plugins.begin(); i != m_Plugins.end(); ++i)
             {
@@ -715,7 +717,9 @@ void RCDCapApplication::initSink(popt::variables_map& vm, const SourcePtr& _last
 void RCDCapApplication::initPipeline(popt::variables_map& vm, SourcePtr& _last)
 {
     auto hp_enable = vm.count("hp-erm"),
-         erspan_enable = vm.count("erspan");
+         erspan_enable = vm.count("erspan"),
+         gre_transparent_ethernet_bridging = vm.count("vmware");
+
     _last = m_Source;
     if(hp_enable)
     {
@@ -726,6 +730,12 @@ void RCDCapApplication::initPipeline(popt::variables_map& vm, SourcePtr& _last)
     if(erspan_enable)
     {
         auto _tmp = boost::make_shared<ERSPANProcessor>(m_IOService, m_Source->getBuffer(), !vm.count("disable-vlan-tag"));
+        _last->attach(_tmp);
+        _last = _tmp;
+    }
+    if(gre_transparent_ethernet_bridging)
+    {
+        auto _tmp = boost::make_shared<GREProcessor>(m_IOService, m_Source->getBuffer());
         _last->attach(_tmp);
         _last = _tmp;
     }

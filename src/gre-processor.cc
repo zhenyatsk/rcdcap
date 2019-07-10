@@ -53,6 +53,7 @@ void GREProcessor::processImpl(PacketInfo* packet_info)
     auto            origlen = pcap_header.getOriginalLength();
     size_t          offset;
     ProtocolType    proto;
+
     if(!this->getProtocolOffset(packet_info, offset, proto))
         return;
     
@@ -61,8 +62,9 @@ void GREProcessor::processImpl(PacketInfo* packet_info)
         return;
     auto& gre_header = reinterpret_cast<const GREHeader&>(packet[offset]);
     auto gre_proto = gre_header.getProtocolType();
-    if(gre_proto != RCDCAP_GRE_ERSPAN)
+    if(gre_proto != RCDCAP_GRE_ERSPAN_VMWARE)
         return;
+
     offset += sizeof(GREHeader);
     if(gre_header.isCheksumPresent())
     {

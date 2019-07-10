@@ -35,7 +35,7 @@ Start a terminal and execute the following commands:
 sudo apt-get install build-essential cmake libboost1.48-dev libpcap-dev \
                      doxygen libboost-system1.48-dev \
                      libboost-program-options1.48-dev \
-                     ibboost-filesystem1.48-dev \
+                     libboost-filesystem1.48-dev \
                      libboost-thread1.48-dev libboost-system1.48-dev
 
 Get into the project top directory(the directory outside the extracted source folder) and type:

@@ -15,8 +15,8 @@
  *   along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef _RCDCAP_ERSPAN_PROCESSOR_HH_
-#define _RCDCAP_ERSPAN_PROCESSOR_HH_
+#ifndef _RCDCAP_GRE_PROCESSOR_HH_
+#define _RCDCAP_GRE_PROCESSOR_HH_
 
 #include "rcdcap/global.hh"
 #include "rcdcap/decapsulating-processor.hh"
@@ -30,7 +30,9 @@ namespace RCDCap
  */
 enum GREProtocolType
 {
-    RCDCAP_GRE_ERSPAN = 0x88be      //!< CISCO ERSPAN protocol number.
+    RCDCAP_GRE_ERSPAN = 0x88be, // Cisco
+    RCDCAP_GRE_ERSPAN_VMWARE = 0x6558      //!< CISCO ERSPAN protocol number.
+
 };
 
 /*! \brief Specifies the fields in the GRE header and provides a convenient way
@@ -97,85 +99,8 @@ public:
     uint32 getSequenceNumber() const { return m_SeqNum; }
 };
 
-/*! \brief Specifies the fields in the CISCO ERSPAN header and provides a convenient way to access them
- *
- *  ERSPAN -- as it is called in CISCO's terminology -- is the protocol
- *  supported by some of the network equipment manufactored by CISCO. It is a
- *  proprietary protocol and it can be deployed to enable encapsulated remote port
- *  mirroring.
- */
-class ERSPANHeader
-{
-    enum
-    {
-        BF_VERSION,     //!< The index of the version bit field.
-        BF_VLAN_ID      //!< The index of the VLAN identifier bit field.
-    };
-    enum
-    {
-        BF_PRIORITY,    //!< The index of the priority bit field.
-        BF_UNKNOWN2,    //!< The index of a bit that contains unknown data.
-        BF_DIRECTION,   //!< The index of the direction bit.
-        BF_TRUNCATED,   //!< The index of the truncated bit.
-        BF_SPAN_ID      //!< The index of the span identifier bit field.
-    };
-    NetworkByteOrderBitfield<uint16, 4, 12>             m_Ver_VID;  //!< The variable that is holding the version and the VLAN ID bit fields.
-    NetworkByteOrderBitfield<uint16, 3, 1, 1, 1, 10>    m_AttrPack; //!< The variable that is holding the rest of the bit fields.
-    NetworkByteOrder<uint32>                            m_Unknown7; //!< A variable that contains unspecified data.
-public:
-    //! Constructor.
-    ERSPANHeader() { static_assert(sizeof(ERSPANHeader) == 8, "invalid header size"); }
-    
-    //! Returns the version of the ERSPAN protocol.
-    uint16 getVersion() const { return m_Ver_VID.get<BF_VERSION>(); }
-    
-    //! Returns the VLAN identifier.
-    uint16 getVLAN() const { return m_Ver_VID.get<BF_VLAN_ID>(); }
-    
-    //! Returns the priority.
-    uint16 getPriority() const { return m_AttrPack.get<BF_PRIORITY>(); }
-    
-    //! Returns the direction.
-    bool getDirection() const { return static_cast<bool>(m_AttrPack.get<BF_DIRECTION>()); }
-    
-    //! Returns true if the packet is truncated.
-    bool isTruncated() const { return static_cast<bool>(m_AttrPack.get<BF_TRUNCATED>()); }
-    
-    //! Returns the SPAN identifier.
-    uint16 getSpanID() const { return m_AttrPack.get<BF_SPAN_ID>(); }
-};
 #pragma pack(pop)
 
-/*! \brief The processor that is used for decapsulating the proprietary CISCO ERSPAN protocol.
- *
- *  Algorithm for decapsulating the protocol and applying the 802.1Q VLAN tag is shown below.
- *
- *  \image html erspan-decapsulation.png Simplified algorithm for decapsulating CISCO ERSPAN.
- *
- *  In general, the algorithm first gets information about the offset and the protocol type
- *  by following the algorithm explained in the figure above. If in fact
- *  this algorithm returns with failure, the procedure does not proceed and the packet
- *  gets handed to the next element in the pipeline. Otherwise, it must determine whether
- *  the protocol used for transporting data is GRE and whether there are
- *  some optional GRE fields. According to the data that was provided from one of the
- *  core routers of University of Twente's network, CISCO ERSPAN uses the old GRE
- *  specification from RFC 1701. More specifically, it uses the optional Checksum and
- *  the Sequence number GRE fields. The Checksum is the only field present in the
- *  newer version RFC 2784. So the Sequence Number check is purely for backward compatibility.
- *  If it gets proven that some other optional fields from the older GRE version are used, it
- *  would be trivial to update the algorithm with some additional checks and offset modifications.
- *
- *  There is an important branching at the end of the algorithm, which enables decapsulation
- *  without 802.1Q tagging. It is in the form of the "Is VLAN tagging enabled?" check.
- *  It is included for any application that does not have proper VLAN support.
- *
- *  After everything is done, the captured length and the original length of the packet must
- *  be updated and the packet gets passed to the next element in the pipeline. It is important
- *  to note that any packet must pass, even if some of the checks at the beginning fail.
- *  There could be another processor in the pipeline that can process the packet.
- *  Even if the packet does not get processed by any processor, it still may contain
- *  vital information, so it should reach the data sink.
- */
 class DLL_EXPORT GREProcessor: public DecapsulatingProcessor
 {
 public:

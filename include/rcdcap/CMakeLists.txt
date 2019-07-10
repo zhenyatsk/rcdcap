@@ -8,6 +8,7 @@ SET(RCDCAP_INC
     ${CMAKE_BINARY_DIR}/include/rcdcap/config.hh
     decapsulating-processor.hh
     erspan-processor.hh
+    gre-processor.hh
     exception.hh
     global.hh
     hp-erm-processor.hh
