@@ -1,0 +1,111 @@
+RCDCap-0.9.0
+============
+Type I and II ERSPAN
+
+RCDCap-0.8.0
+============
+Better queuing
+
+RCDCap-0.7.99
+=============
+Advanced packet analysis features preview:
+* Configurable burst packet processing.
+* Injecting traffic to regular Ethernet device.
+* Discard Sink for enabling pure traffic analysis.
+* Daemomization.
+* Statistics Sink for analysing pipeline performance.
+* DHCP, DHCPv6, NDP and ARP traffic monitoring by using the extension
+  Quiet Neighborhood.
+* Plug-ins are built by default.
+  * It can be used to capture rogue DHCP servers and hosts that are
+    sending wrong Router Advertisement messages.
+  * IEEE 802.1Q VLAN support is included.
+  * Automatic learning phase is supported.
+  * The data is kept in optimized structure for multithreaded processing.
+  * The network table is saved in user readable format (XML, JSON or INFO).
+  * It includes a list of all legitimate and suspicious hosts, VLANs and
+    subnets.
+
+
+RCDCap-0.7.1
+============
+GCC-4.7.x build fixes.
+
+
+RCDCap-0.7.0
+============
+Plug-in system related improvements and bug fixes, but the main feature in
+this release is:
+* Python binding plug-in.
+
+
+RCDCap-0.6.0
+============
+Again, a release that includes just new features:
+* RCDCap now includes a simple plug-in system that enables extending it with
+  new data sources, processors and data sinks.
+* A simple VLAN monitor is included as an example. It could be used to detect
+  untagged Ethernet frames and unexpected VLAN identifiers inside the monitored
+  network.
+* It is now possible to disable the buffer memory locking; therefore, enabling
+  a regular user to run the UDP socket-based data source used for capturing
+  HP ERM.
+* The UDP socket-based data source now defaults to port 7932.
+
+
+RCDCap-0.5.0
+============
+It includes mostly new features:
+* Now it is possible to run the processor without applying the IEEE 802.1Q VLAN
+  tag by using the --disable-vlan-tag command line options.
+* A new UDP socket-based data source is provided for HP ERM.
+
+RCDCap-0.4.0
+============
+New features and performance improvements:
+* When RCDCap is started on more than one thread, it starts the capture process
+  in its own separate thread by default.
+* Thread pinning is now available as a command line option.
+* The algorithm for the capturing process could be chosen with a command line
+  option.
+
+RCDCap-0.3.1
+============
+Minor improvements:
+* Documentation improvements.
+* RCDCap no longer prints extra data to the standard output when binary format
+  is chosen.
+* Additional packet counters.
+
+RCDCap-0.3.0
+============
+Major refactoring and new command line options:
+* The snapshot length could be now specified by applying the --snaplen
+  command line option.
+* RCDCap now uses a fixed internal buffer to store all of the packets that
+  are going to be processed.
+* The size of the internal buffer could be specified with the --buffer-size
+  command line option.
+* An optional PF_RING support is included, which is enabled by applying the
+  --pfring command line option when capturing data from a device.
+* Improved statistics.
+
+RCDCap-0.2.0
+============
+This version just includes minor fixes and improvements:
+* Some documentation improvements.
+* The command line option --tap-device now has an optional argument, which
+  is the name of the TAP device that must be created.
+* The --tap-dev-name command line option was removed.
+* You can make the TAP device persistent by adding the --tap-persist option.
+* There is a new option --tap-dev-addr, which is used for specifying the IPv4
+  address of the TAP device.
+
+RCDCap-0.1.1
+============
+The initial version of the package. It contains the following features:
+* HP ERM decapsulation.
+* ERSPAN decapsulation.
+* VLAN support (802.1Q and 802.1P).
+* Outputting the processed data to a libpcap dump file, the standard output,
+  or a TAP device.

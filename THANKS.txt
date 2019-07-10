@@ -1,0 +1,21 @@
+These ladies and gents have provided support in the development of RCDCap:
+ 
+Julien Egron
+ 
+Also, let's not forget the invaluable feedback by some of my supervisor during my student years:
+ 
+Rick Hofstede
+Pieter-Tjerk de Boer
+Rossitza Goleva
+
+I would like to thank the sysops at University of Twente and the member of the DACS group.
+
+---
+Thanks to these people that submitted patches and suggestions:
+
+Walter Schoeber
+
+---
+Big thanks to these people that donated money for development:
+
+Julien Egron

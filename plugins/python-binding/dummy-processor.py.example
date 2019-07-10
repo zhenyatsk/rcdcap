@@ -1,0 +1,78 @@
+#!/usr/bin/python
+# coding=iso-8859-1
+
+#
+#   RCDCap
+#   Copyright (C) 2012  Zdravko Velinov
+#
+#   This program is free software: you can redistribute it and/or modify
+#   it under the terms of the GNU General Public License as published by
+#   the Free Software Foundation, either version 3 of the License, or
+#   (at your option) any later version.
+#
+#   This program is distributed in the hope that it will be useful,
+#   but WITHOUT ANY WARRANTY; without even the implied warranty of
+#   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#   GNU General Public License for more details.
+#
+#   You should have received a copy of the GNU General Public License
+#   along with this program.  If not, see <http://www.gnu.org/licenses/>.
+#
+
+from RCDCap import *
+
+class DummyProcessor(Processor):
+    """A processor used for testing purposes."""
+    def __init__(self):
+        """Constructor."""
+
+        # Initializations.
+        super(DummyProcessor, self).__init__()
+
+    def notify(self, packet_info):
+        """Notifies the processor about new data.
+
+        \param packet_info  a pointer to the information about the packet.
+        """
+        if self.getMainSink() != 0:
+            self.getMainSink().notify(packet_info)
+
+class DummyProcessorPlugin(Plugin):
+    """An example plug-in which is used for testing purposes."""
+    def __init__(self):
+        """Constructor."""
+
+        # Initializations.
+        super(DummyProcessorPlugin, self).__init__()
+
+    def init(self, io_service, opts):
+        """Initializes the plugin.
+
+        This function inserts all additional command line options supported
+        by the plug-in. Also, it initializes some basic values associated with
+        the plug-in.
+
+        \param io_service   a reference to the Boost.ASIO I/O Service.
+        \param opts         a reference to the command line options description.
+        """
+
+        ptr = opts.add_options()\
+            ("python-dummy-processor", "this processor is for testing purposes")
+
+    def hasProcessor(self, src, vm):
+        """Returns a pointer to a new processor, if the command line options
+           match the criteria placed by the plug-in.
+
+        \param src  a reference to the data source inside RCDCap's pipeline.
+        \param vm   a reference to the parser command line options.
+        """
+
+        # Initializes a new plug-in processor only if --python-dummy-processor
+        # is specified.
+        dp = vm.count("python-dummy-processor")
+        if dp != 0:
+            return DummyProcessor()
+
+def RCDCapCreatePlugin():
+    """Initializes the plug-in."""
+    return DummyProcessorPlugin()

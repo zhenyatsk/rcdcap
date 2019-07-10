@@ -1,0 +1,11 @@
+SET(CPACK_GENERATOR ${CPACK_GENERATOR} "DEB")
+SET(CPACK_PACKAGE_DESCRIPTION_SUMMARY "RCDCap is a remote capture preprocessor.")
+SET(CPACK_PACKAGE_DESCRIPTION "RCDCap is a remote capture preprocessor. It is used for removing some types of encapsulation from the incoming traffic, such as HP ERM and CISCO ERSPAN. That makes it particularly suitable for adapting the traffic for applications that do not support this kind of encapsulation.")
+IF(NOT RCDCAP_NODEPS AND NOT RCDCAP_STATIC)
+	SET(CPACK_DEBIAN_PACKAGE_DEPENDS "libpcap0.8, libboost-system1.48.0, libboost-program-options1.48.0, libboost-thread1.48.0")
+ENDIF()
+# SET(CPACK_DEBIAN_PACKAGE_ARCHITECTURE "i386")
+SET(CPACK_DEBIAN_PACKAGE_HOMEPAGE "http://sourceforge.net/projects/rcdcap")
+SET(CPACK_DEBIAN_PACKAGE_MAINTAINER "Zdravko Velinov <z.velinov@vkv5.com>")
+SET(CPACK_RESOURCE_FILE_LICENSE "${CMAKE_SOURCE_DIR}/LICENSE.txt")
+

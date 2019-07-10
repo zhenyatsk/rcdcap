@@ -1,0 +1,253 @@
+.TH RCDCAP 1 "3 May 2012"
+.SH NAME
+rcdcap \- remote capture preprocessor
+.SH SYNOPSIS
+.HP
+.B rcdcap
+[ \fB\-\-disable\-memory\-locking\fR ]
+[ \fB\-\-load\-plugins\fR \fIpluginfiles\fR ]
+[ \fB\-\-disable\-vlan\-tag\fR ]
+[ \fB\-\-dummy\fR ]
+[ \fB\-\-thread\-pinning\fR \fIpinmode\fR ]
+[ \fB\-\-capture\-mode\fR \fIcapmode\fR ]
+[ \fB\-\-worker\-threads\fR \fItcount\fR ]
+[ \fB\-t\fR \fIdevname\fR ]
+[ \fB\-\-tap-dev-addr\fR \fIipaddr\fR ]
+[ \fB\-r\fR \fIinbinaryfile\fR ]
+[ \fB\-o\fR \fIouttextfile\fR ]
+[ \fB\-w\fR \fIoutbinaryfile\fR ]
+[ \fB\-H\fR \fIudpport\fR ]
+[ \fB\-i\fR \fIinterface\fR ]
+[ \fB\-b\fR \fIbufsiz\fR ]
+[ \fB\-s\fR \fIsnaplen\fR ]
+[ \fIexpression\fR ]
+.SH DESCRIPTION
+RCDCap is a remote capture preprocessor. Its main purpose is to remove any packet
+encapsulation that was applied by a switch or a router, which uses HP ERM or
+CISCO ERSPAN for encapsulated remote port mirroring. The program could receive
+the data through different sources, such as \fIstdin\fR, network interface,
+pcap dump file, etc. Respectively, it could write the processed packets to the
+\fIstdout\fR, virtual Ethernet device (tap), and a pcap dump file.
+.PP
+The application is suitable for adapting the encapsulated traffic for applications
+that do not support the employed encapsulation. Currently, there are two options:
+the processed data could be piped through \fIstdout\fR, or outputted to a virtual
+Ethernet device (tap).
+.SH OPTIONS
+.TP
+.BR \-\-disable\-memory\-locking
+Disable buffer memory locking. This option could lead to bad performance
+because it enables paging to the swap area. On the other hand, it could be
+used with \-H to enable running the application as a HP ERM destination host
+under an unprivileged user.
+.TP
+.BR \-\-load\-plugins =\fIpluginfiles\fR
+Load the specified plug-in files inside RCDCap. This option could be used to
+load new plug-ins that add new data sources, processors and data sinks to 
+the RCDCap's pipeline.
+.TP
+.BR \-\-thread\-pinning =\fIpinmode\fR
+Set whether the threads should be pinned to the specified core, different cores
+or controlled by the scheduler, as usual. Here is a short list of the available
+options:
+.RS
+.RS
+.TP
+\fBdisable\fR
+Disable thread pinning and use the scheduler.
+.TP
+\fBdifferent\fR
+Pin the selected amount of threads to different cores.
+.TP
+\fBirq-different\fR
+Pin the selected amount of threads to different cores and use one core entirely
+for handling the interrupts.
+.TP
+\fIcore\fR
+Pin all of the threads to the specified core, e.g. 0, 1, 2, etc.
+.RE
+.RE
+
+.RS
+By default, this option is disabled, because it could lead to poor performance
+if one of the cores is overloaded. It could improve the performance, if a
+less busy core is selected. The \fBirq-different\fR option could yield a really
+good performance for small packets.
+.RE
+.TP
+.BR \-\-capture\-mode =\fIcapmode\fR
+Set whether the capturing process should run separately or compete for resources
+with the rest of the application in asynchronous mode. The available options
+are:
+.RS
+.RS
+.TP
+\fBasync\fR
+The capturing process is running as asynchronous tasks and competes for resources
+with the rest of the application.
+.TP
+\fBsync\fR
+The capturing process is running in a separate thread from the rest of the process.
+This option is obviously not available when the application is running on a
+single thread.
+.RE
+.RE
+.TP
+.BR \-\-worker\-threads =\fItcount\fR
+Force the application to spawn a given amount of worker threads. In general,
+it is better to spawn more than one thread, but less than the available hardware
+threads.
+.TP
+.BR \-\-dummy
+Ignore any other output options and just count packets. This option is useful
+for debugging purposes only.
+.TP
+.BR \-t ", " \-\-tap-device =\fIdevname\fR
+Output the raw packets to a tap device with the specified name \fIdevname\fR.
+This option is used for specifying the sink into which the processed packets
+must be written. Note that you can specify only one sink; otherwise, the
+application will output an error message and exit.
+.TP
+.BR \-\-tap\-dev\-addr =\fIipaddr\fR
+Set the IPv4 of the tap device to the specified \fIipaddr\fR. This option is
+valid only if \fB\-\-tap-device\fR is specified.
+.TP
+.BR \-\-tap\-persist
+Set the TAP device in persistent mode, which means that the device will not
+be removed after the application exits.
+.TP
+.BR \-r ", " \-\-read\-binary =\fIinbinaryfile\fR
+Read the raw packets from the specified file \fIinbinaryfile\fR or stdin, if
+``-'' is passed. This option is used for specifying the source of the
+packets that must be processed. Note that you can specify only one source;
+otherwise, the application will output an error message and exit.
+.TP
+.BR \-o ", " \-\-write\-text =\fIouttextfile\fR
+Write some information about the captured packets in text format to the
+specified file \fIoutputtextfile\fR or \fIstdout\fR, if ``-'' is passed (this
+option is used by default when no output method is specified). This option is
+used for specifying the sink into which the information about the processed
+packets must be written. Note that you can specify only one sink; otherwise, the
+application will output an error message and exit.
+.TP
+.BR \-w ",  " \-\-write-binary =\fIoutbinaryfile\fR
+Write the raw processed packets to the specified file \fIoutbinaryfile\fR or
+\fIstdout\fR, if ``-'' is passed. This option is used for specifying the sink
+into which the processed packets must be written. Note that you can specify only
+one sink; otherwise, the application will output an error message and exit.
+.TP
+.BR \-H ", " \-\-hp\-erm\-server =\fIudpport\fR
+Run the application as HP ERM destination host. This type of data source is
+implemented as a regular UDP server that is listening on the user-specified
+port. It defaults to port 7932, if an UDP port is not specified. Note that you
+can specify only one source; otherwise,  the application will output an error
+message and exit.
+.TP
+.BR \-i ", " \-\-interface =\fIinterface\fR
+Listen on \fIinterface\fR. This option is used for specifying the source of the
+packets that must be processed. Note that you can specify only one source;
+otherwise, the application will output an error message and exit.
+.TP
+.BR \-b ", " \-\-buffer-size =\fIbufsize\fR
+Set the internal buffer to the specified size \fIbufsize\fR in the specified
+unit. Internally, RCDCAP uses a ring buffer with padding, so it could be
+beneficial in some situations to set it to a higher value. It is especially
+useful, if the hard drive is involved in high speed capturing.
+.TP
+.BR \-s ", " snaplen =\fIlen\fR
+Set the snapshot length in bytes to the one that is specified \fIlen\fR. In
+general, you should set it to a higher value if you use a network device for
+dumping information; otherwise, the program would fail with an exception.
+.TP
+.BR \-\-pfring
+Use libpfring as a library for capturing data (this option is valid only when a
+conventional network device is specified for input). PF_RING has lots of driver
+optimizations, so it could be worth trying, if there is high packet loss.
+.TP
+\fIexpression\fR
+PCAP filter expression; for more information you can refer to the pcap(3) or
+the tcpdump(1) documentation. Note that this filter is applied before any
+processing by the program. If you want to apply a post-filter, you must pipe
+the output of the application to another instance of RCDCap or tcpdump.
+.TP
+.BR \-\-hp-erm =\fIudpport\fR
+Enable the HP ERM decapsulating processor for UDP traffic received on the
+specified UDP port \fIudpport\fR. 
+.TP
+.BR \-\-erspan
+Enable the ERSPAN decapsulating processor.
+.TP
+.BR \-\-disable\-vlan\-tag
+Disable 802.1Q VLAN tagging for all of the decapsulating processors. This
+option is useful for applications that do not have proper VLAN support.
+.TP
+.BR \-\-help
+Print the available command line options and exit.
+.TP
+.BR \-\-version
+Print the current version and exit.
+
+.SH EXAMPLES
+
+Capturing packets on eth0:
+
+.RS
+.B rcdcap -i eth0
+.RE
+
+Outputting the captured packets to a libpcap file:
+
+.RS
+.B rcdcap -i eth0 -w result.pcap
+.RE
+
+Piping the output of the application to tcpdump:
+
+.RS
+.B rcdcap -i eth0 -w - | tcpdump -r -
+.RE
+
+Outputting to a TAP device:
+
+.RS
+.B rcdcap -t tap3
+.RE
+
+Decapsulating HP ERM traffic on port 9999:
+
+.RS
+.B rcdcap --hp-erm 9999
+.RE
+
+Creating a TAP device beforehand and attaching to it, so that Wireshark could
+read the information that is processed from a file:
+
+.RS
+.B ip tuntap add dev tap3 mode tap
+
+.B ifconfig tap3 up
+
+.B (attach to tap3 via Wireshark)
+
+.B rcdcap -r test.pcap -t tap3 --tap-persist
+.RE
+
+.TP
+Creating a 802.1D bridge between the TAP device and another device:
+
+.RS
+.B ip tuntap add dev tap3 mode tap
+
+.B ifconfig tap3 up
+
+.B (setup your second device; in this case tap4)
+
+.B brctl addbr br0
+
+.B brctl addif br0 tap3 tap4
+
+.B rcdcap -i eth0 -t tap3 --tap-persist
+.RE
+
+.SH "SEE ALSO"
+tcpdump(1), pcap(3)

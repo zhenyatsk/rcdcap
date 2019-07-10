@@ -1,0 +1,9 @@
+// Place your key bindings in this file to overwrite the defaults
+[
+    { "key": "f8", "command": "workbench.action.tasks.build" },
+    { "key": "f7", "command": "workbench.action.tasks.test" },
+    { "key": "f4",                    "command": "editor.action.marker.next",
+                                     "when": "editorFocus && !editorReadonly" },
+    { "key": "shift+f4",              "command": "editor.action.marker.prev",
+                                        "when": "editorFocus && !editorReadonly" }
+]

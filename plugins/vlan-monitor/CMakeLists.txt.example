@@ -1,0 +1,18 @@
+CMAKE_MINIMUM_REQUIRED(VERSION 2.8)
+PROJECT(VLANMonitor)
+
+FIND_LIBRARY(LIBRCDCAP_CORE "rcdcap_core" PATH_SUFFIXES "lib" "local/lib")
+FIND_PATH(LIBRCDCAP_INC "plugin.hh"
+          PATH_SUFFIXES "include/rcdcap" "local/include/rcdcap")
+IF(NOT LIBRCDCAP_CORE AND NOT LIBRCDCAP_INC)
+    MESSAGE(FATAL_ERROR "librcdcap_core was not found")
+ENDIF()
+
+ADD_DEFINITIONS("-std=c++0x")
+
+INCLUDE_DIRECTORIES(${LIBRCDCAP_INC})
+
+ADD_LIBRARY(vlan-monitor MODULE vlan-monitor-processor.cc
+                                vlan-monitor-processor.hh)
+
+TARGET_LINK_LIBRARIES(vlan-monitor ${LIBRCDCAP_CORE})

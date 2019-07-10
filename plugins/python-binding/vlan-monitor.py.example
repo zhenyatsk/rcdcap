@@ -1,0 +1,235 @@
+#!/usr/bin/python
+# coding=iso-8859-1
+
+#
+#   RCDCap
+#   Copyright (C) 2012  Zdravko Velinov
+#
+#   This program is free software: you can redistribute it and/or modify
+#   it under the terms of the GNU General Public License as published by
+#   the Free Software Foundation, either version 3 of the License, or
+#   (at your option) any later version.
+#
+#   This program is distributed in the hope that it will be useful,
+#   but WITHOUT ANY WARRANTY; without even the implied warranty of
+#   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#   GNU General Public License for more details.
+#
+#   You should have received a copy of the GNU General Public License
+#   along with this program.  If not, see <http://www.gnu.org/licenses/>.
+#
+
+from RCDCap import *
+from syslog import *
+import functools
+
+class VLANMonitor(Processor):
+    """A processor which monitors for unknown VLANs and untagged packets."""
+    def __init__(self, io_service, src, vlans, enable_untagged):
+        """Constructor.
+
+        \param io_service       a reference to the Boost.ASIO I/O Service.
+        \param src              a reference to the data source inside RCDCap's
+                                pipeline.
+        \param vlans            a list of the permitted VLAN identifier values.
+        \param enable_untagged  specifies whether untagged packets must be
+                                reported.
+        """
+
+        # Initializations.
+        super(VLANMonitor, self).__init__()
+        self.io_service = io_service
+        self.src = src
+        self.vlans = vlans
+        self.enable_untagged = enable_untagged
+        self.arp_table = dict()
+        # Opens a new connection to syslog.
+        openlog("rcdcap", LOG_PID, LOG_LOCAL0)
+
+    def __del__(self):
+        """Destructor."""
+
+        # Closes the connection to syslog.
+        closelog()
+
+    def notify(self, packet_info):
+        """Notifies the processor about new data.
+
+        \param packet_info  a pointer to the information about the packet.
+        """
+        self.io_service.post(functools.partial(self.analyze, packet_info))
+
+    def analyze(self, packet_info):
+        """Analyzes the contents of the packet.
+
+        It does the analysis by using analyze_implementation and afterwards
+        hands the packet to the next element in the pipeline.
+
+        \param packet_info  a pointer to the information about the packet.
+        """
+
+        # Analyzes the packet contents.
+        self.analyze_implementation(packet_info)
+        # Hands the analyzed packet to the next element in the pipeline.
+        if self.getMainSink() != 0:
+            self.getMainSink().notify(packet_info)
+
+    def analyze_implementation(self, packet_info):
+        """Analyzes the contents of the packet.
+
+        That is the actual implementation of the packet analysis.
+
+        \param packet_info  a pointer to the information about the packet.
+        """
+        # The processor currently supports only Ethernet.
+        if self.src.getLinkType() != DataLinks.DLT_EN10MB:
+            return
+        # Contains the report that is going to be printed to syslog.
+        report = ""
+        # The offset used for dissecting the headers. It is used just for captured
+        # length sanity checks.
+        offset = 0
+        # Initializes the packet hierarchy used for dissecting the packet.
+        packet = GetPacketHierarchy(packet_info)
+        # Gets the PCAP header of this packet.
+        pcap_header = packet_info.getPCAPHeader()
+        # Sanity check.
+        if pcap_header.caplen < packet.ethernet().size():
+            return
+        # Extracts the source and destination MAC addresses.
+        dmac = packet.ethernet().header().dst_mac
+        smac = packet.ethernet().header().src_mac
+        # Extracts the protocol type.
+        eth_type = packet.ethernet().header().ether_type
+        # Checks whether the Ethernet frame is actually an IEEE 802.1Q frame.
+        if eth_type == EtherType.RCDCAP_ETHER_TYPE_802_1Q:
+            # Sanity check.
+            if pcap_header.caplen < packet.dotQ().size():
+                return
+            # Extracts the IEEE 802.1Q header.
+            vlan_header = packet.dotQ().header()
+            # Extracts the VLAN identifier.
+            vid = vlan_header.vlan_id
+            # Extracts the Ethernet type inside the IEEE 802.1Q header.
+            eth_type = vlan_header.ether_type
+            # Checks whether the VID is present in the list of permitted VLANs
+            # and if that is not the case, it writes a report.
+            if not vid in self.vlans:
+                report = "arp-monitor: packet has been received from unknown VLAN %d: " \
+                         "Source MAC address: %s; Destination MAC address: %s" \
+                         %(vid, smac, dmac)
+            # Gets the packet offset used for doing sanity checks.
+            offset = packet.dotQ().size()
+        else:
+            # Writes an report, if untagged Ethernet frames are forbidden.
+            if not self.enable_untagged:
+                report = "arp-monitor: untagged Ethernet frame detected: " \
+                         "Source MAC address: %s; Destination MAC address: %s" \
+                         %(smac, dmac)
+            # Gets the packet offset used for doing sanity checks.
+            offset = packet.ethernet().size()
+        # Checks whether it is an ARP packet and also performs a sanity check.
+        if eth_type == EtherType.RCDCAP_ETHER_TYPE_ARP and \
+           pcap_header.caplen >= packet.ethernet().arp().size() + offset:
+            # Extracts the ARP header.
+            arp_header = packet.ethernet().arp().header()
+            # Extracts the protocol address length.
+            protolen = arp_header.protocol_address_length
+            # Extracts the hardware address length.
+            hwlen = arp_header.hardware_address_length
+            # Currently, it supports only IPv4.
+            if arp_header.hardware_type == ARPHardwareType.RCDCAP_ARP_HW_Ethernet and \
+               hwlen == packet.ethernet().size() and \
+               arp_header.protocol_type == EtherType.RCDCAP_ETHER_TYPE_IPv4 and \
+               protolen == packet.ethernet().ipv4().size():
+                # Moves the offset past the ARP header.
+                offset += arp_header.size()
+                # Checks the type of the ARP message.
+                if arp_header.opcode == ARPOpcode.RCDCAP_ARP_REPLY:
+                    # Extracts the destination and source MAC and IP. Then it
+                    # enters them into the processor's ARP table.
+                    ipv4_reply = packet.ethernet().arp().ipv4Reply()
+                    dstmac = ipv4_reply.dst_hardware_address
+                    dstip = ipv4_reply.dst_hardware_address
+                    srcmac = ipv4_reply.src_hardware_address
+                    srcip = ipv4_reply.src_protocol_address
+                    self.arp_table[dstmap] = dstip
+                    self.arp_table[srcmac] = srcip
+                elif arp_header.opcode == ARPOpcodeRCDCAP_ARP_REQUEST and \
+                     pcap_header.caplen >= offset + protolen + hwlen:
+                    # Extracts the source MAC and IP. Then it enters them
+                    # into the processor's ARP table.
+                    srcmac = packet.ethernet().arp().ipv4Request().src_hardware_address
+                    srcip = packet.ethernet().arp().ipv4Request().src_protocol_address
+                    self.arp_table[srcmac] = srcip
+        # If there is a report, it gets outputted to syslog with some additional
+        # information.
+        if len(report) != 0:
+            # Checks whether the source MAC address is inside the ARP table.
+            # If that is true, it outputs the IP address associated with it.
+            srcip = self.arp_table.get(smac)
+            if srcip != None:
+                report += "; Source (L2) IP: %s" % srcip
+            else:
+                report += "; Source (L2) IP: Unknown"
+            # Checks whether the destination MAC address is inside the ARP table.
+            # If that is true, it outputs the IP address associated with it.
+            dstip = self.arp_table.get(dmac)
+            if dstip != None:
+                report += "; Destination (L2) IP: %s" % dstip
+            else:
+                report += "; Destination (L2) IP: Unknown"
+            # Also, if it is an IPv4 packet, the actual source and
+            # destination IP get extracted.
+            if eth_type == EtherType.RCDCAP_ETHER_TYPE_IPv4:
+                ip_header = packet.ethernet().ipv4().header()
+                report += "; Source (L3) IP: %s; Destination (L3) IP: %s" %(ip_header.src_ip, ip_header.dst_ip)
+            syslog(report)
+
+class VLANMonitorPlugin(Plugin):
+    """An example plug-in which monitors for unknown VLANs and untagged packets."""
+    def __init__(self):
+        """Constructor."""
+
+        # Initializations.
+        super(VLANMonitorPlugin, self).__init__()
+        self.vlans = VectorUnsignedInt()
+
+    def init(self, io_service, opts):
+        """Initializes the plugin.
+
+        This function inserts all additional command line options supported
+        by the plug-in. Also, it initializes some basic values associated with
+        the plug-in.
+
+        \param io_service   a reference to the Boost.ASIO I/O Service.
+        \param opts         a reference to the command line options description.
+        """
+
+        # Saves a reference to the Boost ASIO I/O Service, which it later passes
+        # to the plug-in processor.
+        self.io_service = io_service
+        ptr = opts.add_options()\
+            ("python-alert-untagged", "alert about untagged Ethernet frames") \
+            ("python-permitted-vlans", vector_uint_value(self.vlans).multitoken(), \
+             "set the VLAN identifiers which are permitted to be received by the monitored network node")
+
+    def hasProcessor(self, src, vm):
+        """Returns a pointer to a new processor, if the command line options
+           match the criteria placed by the plug-in.
+
+        \param src  a reference to the data source inside RCDCap's pipeline.
+        \param vm   a reference to the parser command line options.
+        """
+
+        # Initializes a new plug-in processor only if --alert-untagged,
+        # --permitted-vlans or both are specified.
+        auc = vm.count("python-alert-untagged")
+        enable_untagged = not auc
+        pvlanc = vm.count("python-permitted-vlans")
+        if auc != 0 or pvlanc != 0:
+            return VLANMonitor(self.io_service, src, self.vlans, enable_untagged)
+
+def RCDCapCreatePlugin():
+    """Initializes the plug-in."""
+    return VLANMonitorPlugin()

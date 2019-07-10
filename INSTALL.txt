@@ -1,0 +1,50 @@
+Linux
+=====
+
+1. Fedora
+---------
+
+First of all, you must install the dependencies and some development tools.
+Start a terminal and login as root, then execute the following commands:
+
+yum groupinstall "Development Tools"
+yum install boost-devel libpcap-devel libstdc++-static cmake
+
+Return back to an unprivileged user and get into the project top directory(the directory
+outside the extracted source folder) and type:
+
+mkdir build-make
+cd build-make
+cmake -G"Unix Makefiles" ../*source
+make
+cpack -D CPACK_RPM_PACKAGE_DEBUG=1 -D CPACK_RPM_SPEC_INSTALL_POST="/bin/true" \
+      -G RPM
+
+      
+
+Finally, you must install the package that you have just created as root:
+
+rpm -ihv RCDCap-*.rpm
+
+2. Ubuntu
+---------
+
+First of all, you must install the dependencies and some development tools.
+Start a terminal and execute the following commands:
+
+sudo apt-get install build-essential cmake libboost1.48-dev libpcap-dev \
+                     doxygen libboost-system1.48-dev \
+                     libboost-program-options1.48-dev \
+                     ibboost-filesystem1.48-dev \
+                     libboost-thread1.48-dev libboost-system1.48-dev
+
+Get into the project top directory(the directory outside the extracted source folder) and type:
+
+mkdir build-make
+cd build-make
+cmake -G"Unix Makefiles" ../*source
+make
+cpack -D CPACK_DEB_PACKAGE_DEBUG=1 \
+      -D CPACK_PACKAGE_CONTACT="Zdravko Velinov <z.velinov@vkv5.com>"\
+      -G DEB
+sudo dpkg -i RCDCap-*.deb

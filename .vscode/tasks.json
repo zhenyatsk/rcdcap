@@ -1,0 +1,85 @@
+{
+    // See https://go.microsoft.com/fwlink/?LinkId=733558
+    // for the documentation about the tasks.json format
+    "version": "0.1.0",
+    "isShellCommand": true,
+
+    "windows": {
+        "command": "cmd",
+        "tasks": [
+            {
+                "taskName": "build",
+                "isBuildCommand": true,
+                "showOutput": "always",            
+                "args": ["/C", "ninja-gen.bat"],
+                "problemMatcher": {
+                    "owner": "cpp",
+                    "fileLocation": "absolute",
+                    "pattern": {
+                        "regexp": "^(.*)\\((\\d+)\\) : (error|warning)(.*)$",
+                        "file": 1,
+                        "line": 2,
+                        "severity": 3,
+                        "message": 4
+                    }
+                }
+            },
+            {
+                "taskName": "build_relwithdebinfo",
+                "isTestCommand": true,
+                "showOutput": "always",            
+                "args": ["/C", "ninja-gen-rel-debug.bat"],
+                "problemMatcher": {
+                    "owner": "cpp",
+                    "fileLocation": "absolute",
+                    "pattern": {
+                        "regexp": "^(.*)\\((\\d+)\\) : (error|warning)(.*)$",
+                        "file": 1,
+                        "line": 2,
+                        "severity": 3,
+                        "message": 4
+                    }
+                }
+            }
+        ]    
+    },
+    "linux": {
+        "command": "sh",
+        "tasks": [
+            {
+                "taskName": "ninja-gen.sh",
+                "isBuildCommand": true,
+                "showOutput": "always",            
+                "args": ["ninja-gen.sh"],
+                "problemMatcher": {
+                    "owner": "cpp",
+                    "fileLocation": "absolute",
+                    "pattern": {
+                        "regexp": "^(.*)\\((\\d+)\\) : (error|warning)(.*)$",
+                        "file": 1,
+                        "line": 2,
+                        "severity": 3,
+                        "message": 4
+                    }
+                }
+            },
+            {
+                "taskName": "ninja-gen-rel-debug.sh",
+                "isTestCommand": true,
+                "showOutput": "always",            
+                "args": ["ninja-gen-rel-debug.sh"],
+                "problemMatcher": {
+                    "owner": "cpp",
+                    "fileLocation": "absolute",
+                    "pattern": {
+                        "regexp": "^(.*)\\((\\d+)\\) : (error|warning)(.*)$",
+                        "file": 1,
+                        "line": 2,
+                        "severity": 3,
+                        "message": 4
+                    }
+                }
+            }
+        ]
+    }
+}
